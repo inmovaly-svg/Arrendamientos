@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Arrendamientos — Control Automático</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F5F3EF;
+  --surface: #FFFFFF;
+  --surface2: #EDE9E2;
+  --border: #D9D3C8;
+  --text: #1A1814;
+  --text2: #6B655A;
+  --text3: #9E9688;
+  --accent: #1F4E3D;
+  --accent-light: #E6EFE8;
+  --amber: #7A4A00;
+  --amber-bg: #FFF3DC;
+  --amber-border: #E8A020;
+  --red: #8B2020;
+  --red-bg: #FDECEC;
+  --red-border: #E24B4A;
+  --blue: #0D3D6E;
+  --blue-bg: #E4EEF8;
+  --blue-border: #378ADD;
+  --purple: #3D2B7A;
+  --purple-bg: #ECEAF8;
+  --purple-border: #7B63D4;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Sora', sans-serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header { background: var(--accent); color: #fff; padding: 24px 28px 20px; border-bottom: 3px solid #143529; }
+.header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.header-icon { font-size: 28px; }
+.header-title { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+.header-sub { font-size: 12px; color: #9ABFB0; font-family: var(--mono); }
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 75px); }
+
+/* ── SIDEBAR ── */
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px 16px; position: sticky; top: 0; height: calc(100vh - 75px); overflow-y: auto; }
+.sidebar-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); padding: 0 8px; margin-bottom: 10px; margin-top: 18px; }
+.sidebar-label:first-child { margin-top: 0; }
+.sidebar-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); border: 1px solid transparent; transition: all .15s; margin-bottom: 2px; }
+.sidebar-item:hover { background: var(--surface2); color: var(--text); }
+.sidebar-item.active { background: var(--accent-light); color: var(--accent); border-color: #C5DECA; font-weight: 600; }
+.sidebar-item .s-icon { font-size: 15px; width: 20px; text-align: center; }
+.sidebar-item .s-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-family: var(--mono); font-weight: 600; padding: 1px 6px; border-radius: 20px; min-width: 20px; text-align: center; }
+.sidebar-item .s-badge.amber { background: var(--amber-border); }
+.sidebar-item .s-badge.red { background: var(--red-border); }
+.sidebar-item .s-badge.blue { background: var(--blue-border); }
+
+/* ── MAIN ── */
+.main { padding: 28px 28px 60px; max-width: 960px; }
+
+/* ── CALLOUT STATS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 24px; }
+.callout { border-radius: var(--radius); padding: 14px 16px; border: 1px solid; position: relative; overflow: hidden; }
+.callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.callout.green { background: var(--accent-light); border-color: #C5DECA; }
+.callout.green::before { background: var(--accent); }
+.callout.amber { background: var(--amber-bg); border-color: #F0CA80; }
+.callout.amber::before { background: var(--amber-border); }
+.callout.red { background: var(--red-bg); border-color: #F0AAAA; }
+.callout.red::before { background: var(--red-border); }
+.callout.blue { background: var(--blue-bg); border-color: #A8C8F0; }
+.callout.blue::before { background: var(--blue-border); }
+.callout.neutral { background: var(--surface2); border-color: var(--border); }
+.callout.neutral::before { background: var(--text3); }
+.callout-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.callout.green .callout-label { color: var(--accent); }
+.callout.amber .callout-label { color: var(--amber); }
+.callout.red .callout-label { color: var(--red); }
+.callout.blue .callout-label { color: var(--blue); }
+.callout.neutral .callout-label { color: var(--text3); }
+.callout-num { font-size: 28px; font-weight: 700; line-height: 1; font-family: var(--mono); transition: all .4s ease; }
+.callout.green .callout-num { color: var(--accent); }
+.callout.amber .callout-num { color: var(--amber); }
+.callout.red .callout-num { color: var(--red); }
+.callout.blue .callout-num { color: var(--blue); }
+.callout.neutral .callout-num { color: var(--text); font-size: 18px; margin-top: 4px; }
+.callout-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* ── ALERTS ── */
+.alerts-section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.alert-card { border-left: 3px solid; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 11px 14px; margin-bottom: 8px; border-top: 1px solid; border-right: 1px solid; border-bottom: 1px solid; display: flex; align-items: flex-start; gap: 12px; animation: slideIn .25s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+.alert-card.red { border-left-color: var(--red-border); background: var(--red-bg); border-color: #F0AAAA; border-left-color: var(--red-border); }
+.alert-card.amber { border-left-color: var(--amber-border); background: var(--amber-bg); border-color: #F0CA80; border-left-color: var(--amber-border); }
+.alert-card.blue { border-left-color: var(--blue-border); background: var(--blue-bg); border-color: #A8C8F0; border-left-color: var(--blue-border); }
+.alert-card.purple { border-left-color: var(--purple-border); background: var(--purple-bg); border-color: #C0B8F0; border-left-color: var(--purple-border); }
+.alert-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.alert-meta { font-size: 11px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; }
+.alert-badge { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.alert-badge.red { background: var(--red-bg); color: var(--red); border: 1px solid #F0AAAA; }
+.alert-badge.amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #F0CA80; }
+.alert-badge.blue { background: var(--blue-bg); color: var(--blue); border: 1px solid #A8C8F0; }
+.alert-badge.purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #C0B8F0; }
+.alert-days { margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.alert-days.red { color: var(--red); }
+.alert-days.amber { color: var(--amber); }
+.alert-days.purple { color: var(--purple); }
+.no-alerts { text-align: center; padding: 20px; color: var(--text3); font-size: 13px; background: var(--surface2); border-radius: var(--radius); border: 1px dashed var(--border); }
+
+/* ── DATABASE TABLE ── */
+.db-section { margin-bottom: 24px; }
+.db-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.db-filter { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.db-filter-btn { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 5px 11px; border: none; background: transparent; color: var(--text3); cursor: pointer; transition: all .12s; white-space: nowrap; }
+.db-filter-btn.active { background: var(--surface); color: var(--text); font-weight: 600; }
+.add-btn { margin-left: auto; font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .12s; }
+.add-btn:hover { background: var(--accent-light); border-color: #C5DECA; }
+
+.db-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.db-row { display: grid; grid-template-columns: 1fr 150px 80px 90px 100px 110px 66px; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border); min-height: 42px; gap: 10px; font-size: 12px; transition: background .1s; }
+.db-row:last-child { border-bottom: none; }
+.db-row.header-row { background: var(--surface2); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); min-height: 34px; font-family: var(--mono); }
+.db-row:not(.header-row):hover { background: #FAFAF8; }
+.db-row:not(.header-row):hover .db-cell-name { color: var(--accent); }
+.db-cell-name { font-weight: 500; color: var(--text); }
+.db-cell-tenant { color: var(--text2); }
+.db-cell-amt { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.db-cell-date { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.db-cell-cobro { font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 4px; white-space: nowrap; display: inline-block; }
+.badge.green { background: var(--accent-light); color: var(--accent); }
+.badge.amber { background: var(--amber-bg); color: var(--amber); }
+.badge.red { background: var(--red-bg); color: var(--red); }
+.badge.gray { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+.badge.purple { background: var(--purple-bg); color: var(--purple); }
+.del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; opacity: 0; transition: opacity .15s, color .15s; padding: 4px; border-radius: 4px; }
+.db-row:hover .del-btn { opacity: 1; }
+.del-btn:hover { color: var(--red); background: var(--red-bg); }
+.pay-btn { background: none; border: 1px solid transparent; cursor: pointer; color: var(--text3); font-size: 12px; opacity: 0; transition: opacity .15s, all .15s; padding: 3px 6px; border-radius: 4px; white-space: nowrap; font-family: var(--sans); font-weight: 600; }
+.db-row:hover .pay-btn { opacity: 1; }
+.pay-btn:hover { color: var(--accent); background: var(--accent-light); border-color: #C5DECA; }
+.row-actions { display: flex; align-items: center; gap: 2px; }
+.detail-hint { font-size: 10px; color: var(--text3); opacity: 0; transition: opacity .15s; font-family: var(--mono); white-space: nowrap; }
+.db-row:hover .detail-hint { opacity: 1; }
+
+/* ── MODAL ── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 26px; width: 620px; max-width: 95vw; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.15); animation: popIn .2s ease; }
+@keyframes popIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+
+/* Tabs del modal */
+.modal-tabs { display: flex; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 18px; }
+.modal-tab { flex: 1; font-family: var(--sans); font-size: 11px; font-weight: 600; padding: 7px 10px; border: none; background: transparent; color: var(--text3); cursor: pointer; transition: all .12s; text-align: center; text-transform: uppercase; letter-spacing: .05em; }
+.modal-tab.active { background: var(--surface); color: var(--accent); }
+.tab-section { display: none; }
+.tab-section.active { display: block; }
+
+.form-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); background: var(--accent-light); border: 1px solid #C5DECA; border-radius: var(--radius-sm); padding: 5px 10px; margin-bottom: 12px; margin-top: 16px; }
+.form-section-label:first-child { margin-top: 0; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid.full { grid-template-columns: 1fr; }
+.form-grid.tri { grid-template-columns: 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); }
+.field input, .field select, .field textarea { font-family: var(--sans); font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+.field textarea { resize: vertical; min-height: 70px; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field .hint { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.btn { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 8px 18px; border-radius: var(--radius-sm); border: 1px solid; cursor: pointer; transition: all .12s; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #163D2E; }
+.btn.secondary { background: var(--surface); border-color: var(--border); color: var(--text2); }
+.btn.secondary:hover { background: var(--surface2); }
+
+/* Cobro chip */
+.cobro-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+.cobro-chip.hoy { background: var(--red-bg); color: var(--red); border: 1px solid #F0AAAA; }
+.cobro-chip.pronto { background: var(--amber-bg); color: var(--amber); border: 1px solid #F0CA80; }
+.cobro-chip.ok { background: var(--accent-light); color: var(--accent); border: 1px solid #C5DECA; }
+
+/* ── DETAIL PANEL ── */
+.detail-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 90; display: none; justify-content: flex-end; }
+.detail-backdrop.open { display: flex; }
+.detail-panel { background: var(--surface); width: 420px; max-width: 95vw; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); box-shadow: -8px 0 32px rgba(0,0,0,.1); animation: slideRight .2s ease; padding: 24px 20px; }
+@keyframes slideRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.detail-close { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text3); padding: 2px 6px; border-radius: 4px; }
+.detail-close:hover { background: var(--surface2); color: var(--text); }
+.detail-prop { font-size: 17px; font-weight: 700; margin-bottom: 4px; margin-top: 28px; }
+.detail-sub { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-bottom: 16px; }
+.detail-section { margin-bottom: 16px; }
+.detail-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); background: var(--accent-light); border: 1px solid #C5DECA; border-radius: 4px; padding: 3px 8px; margin-bottom: 8px; display: inline-block; }
+.detail-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+.detail-label { color: var(--text3); min-width: 130px; flex-shrink: 0; font-size: 11px; }
+.detail-val { color: var(--text); font-weight: 500; flex: 1; }
+.detail-cobro-box { background: var(--accent-light); border: 1px solid #C5DECA; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; }
+.detail-cobro-label { font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+.detail-cobro-date { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+.detail-cobro-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.detail-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+/* ── INSP TABLE ── */
+.insp-row { display: grid; grid-template-columns: 1fr 120px 130px 36px; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border); min-height: 42px; gap: 10px; font-size: 12px; transition: background .1s; }
+.insp-row.header-row { background: var(--surface2); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); min-height: 34px; font-family: var(--mono); }
+.insp-row:not(.header-row):hover { background: #FAFAF8; }
+.insp-row:last-child { border-bottom: none; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 32px; color: var(--text3); font-size: 13px; }
+.empty-state .e-icon { font-size: 28px; margin-bottom: 8px; }
+
+/* ── NOTIFICATION ── */
+.notif { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; z-index: 200; opacity: 0; transform: translateY(10px); transition: all .25s ease; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.notif.show { opacity: 1; transform: translateY(0); }
+
+/* Condicional */
+.cond-warning { background: var(--amber-bg); border: 1px solid #F0CA80; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 11px; color: var(--amber); display: none; margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; display: flex; overflow-x: auto; gap: 4px; padding: 12px; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--border); }
+  .sidebar-label { display: none; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .db-row { grid-template-columns: 1fr 80px 70px 36px; }
+  .db-row .db-cell-tenant, .db-row .db-cell-date, .db-row .db-cell-cobro { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-icon">🏢</div>
+    <div>
+      <div class="header-title">Control de Arrendamientos</div>
+      <div class="header-sub">Dashboard automático · Carabobo, Venezuela</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-label">Vistas</div>
+    <div class="sidebar-item active" onclick="showView('dashboard')">
+      <span class="s-icon">📊</span> Dashboard
+    </div>
+    <div class="sidebar-item" onclick="showView('contratos')">
+      <span class="s-icon">📄</span> Contratos
+      <span class="s-badge" id="sb-total">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showView('por-vencer')">
+      <span class="s-icon">⚡</span> Por vencer
+      <span class="s-badge amber" id="sb-vencer">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showView('renovacion')">
+      <span class="s-icon">↺</span> Renovación
+      <span class="s-badge red" id="sb-renov">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showView('inspecciones')">
+      <span class="s-icon">🔍</span> Inspecciones
+      <span class="s-badge blue" id="sb-insp">0</span>
+    </div>
+    <div class="sidebar-label">Acciones</div>
+    <div class="sidebar-item" onclick="openContrato()">
+      <span class="s-icon">＋</span> Nuevo contrato
+    </div>
+    <div class="sidebar-item" onclick="openInspeccion()">
+      <span class="s-icon">＋</span> Nueva inspección
+    </div>
+    <div class="sidebar-label">Datos</div>
+    <div class="sidebar-item" onclick="exportarDatos()" title="Descarga un archivo .json con todos tus contratos">
+      <span class="s-icon">⬇</span> Exportar datos
+    </div>
+    <div class="sidebar-item" onclick="document.getElementById('import-input').click()" title="Carga un archivo .json exportado previamente">
+      <span class="s-icon">⬆</span> Importar datos
+    </div>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importarDatos(event)">
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="view-dashboard" class="view">
+      <div class="section-title">📋 Resumen automático</div>
+      <div class="stats-grid">
+        <div class="callout green">
+          <div class="callout-label">Activos</div>
+          <div class="callout-num" id="stat-activos">0</div>
+          <div class="callout-sub">contratos</div>
+        </div>
+        <div class="callout amber">
+          <div class="callout-label">Por vencer</div>
+          <div class="callout-num" id="stat-vencer">0</div>
+          <div class="callout-sub">próx. 60 días</div>
+        </div>
+        <div class="callout red">
+          <div class="callout-label">Renovación</div>
+          <div class="callout-num" id="stat-renov">0</div>
+          <div class="callout-sub">en proceso</div>
+        </div>
+        <div class="callout blue">
+          <div class="callout-label">Inspecciones</div>
+          <div class="callout-num" id="stat-insp">0</div>
+          <div class="callout-sub">pendientes</div>
+        </div>
+        <div class="callout neutral">
+          <div class="callout-label">Ingresos/mes</div>
+          <div class="callout-num" id="stat-ingresos">$0</div>
+          <div class="callout-sub">USD aprox.</div>
+        </div>
+      </div>
+
+      <div class="alerts-section">
+        <div class="section-title">🚨 Alertas automáticas</div>
+        <div id="alerts-container">
+          <div class="no-alerts">Sin alertas activas. Agrega contratos para ver las alertas automáticas.</div>
+        </div>
+      </div>
+
+      <div class="db-section">
+        <div class="section-title">📄 Contratos recientes</div>
+        <div class="db-table" id="dash-table">
+          <div class="db-row header-row">
+            <div>Propiedad / Contrato</div>
+            <div>Inquilino</div>
+            <div>Monto</div>
+            <div>Estado</div>
+            <div>Vencimiento</div>
+            <div>Próx. cobro</div>
+            <div></div>
+          </div>
+          <div class="empty-state" id="dash-empty">
+            <div class="e-icon">📄</div>
+            <div>No hay contratos aún.<br>Haz clic en <strong>+ Nuevo contrato</strong> para comenzar.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CONTRATOS ===== -->
+    <div id="view-contratos" class="view" style="display:none">
+      <div class="db-toolbar">
+        <div class="section-title" style="margin:0; flex:1">📄 Todos los contratos</div>
+        <button class="add-btn" onclick="openContrato()">＋ Nuevo contrato</button>
+      </div>
+      <div class="db-table" id="full-table">
+        <div class="db-row header-row">
+          <div>Propiedad / Contrato</div>
+          <div>Inquilino</div>
+          <div>Monto</div>
+          <div>Estado</div>
+          <div>Vencimiento</div>
+          <div>Próx. cobro</div>
+          <div></div>
+        </div>
+        <div class="empty-state" id="full-empty">
+          <div class="e-icon">📄</div>
+          <div>No hay contratos aún.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== POR VENCER ===== -->
+    <div id="view-por-vencer" class="view" style="display:none">
+      <div class="db-toolbar">
+        <div class="section-title" style="margin:0">⚡ Contratos por vencer (próx. 60 días)</div>
+      </div>
+      <div class="db-table" id="vencer-table">
+        <div class="db-row header-row">
+          <div>Propiedad / Contrato</div>
+          <div>Inquilino</div>
+          <div>Monto</div>
+          <div>Estado</div>
+          <div>Vencimiento</div>
+          <div>Próx. cobro</div>
+          <div></div>
+        </div>
+        <div class="empty-state" id="vencer-empty">
+          <div class="e-icon">✅</div>
+          <div>No hay contratos por vencer en los próximos 60 días.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RENOVACIÓN ===== -->
+    <div id="view-renovacion" class="view" style="display:none">
+      <div class="db-toolbar">
+        <div class="section-title" style="margin:0">↺ Contratos en renovación</div>
+      </div>
+      <div class="db-table" id="renov-table">
+        <div class="db-row header-row">
+          <div>Propiedad / Contrato</div>
+          <div>Inquilino</div>
+          <div>Monto</div>
+          <div>Estado</div>
+          <div>Vencimiento</div>
+          <div>Próx. cobro</div>
+          <div></div>
+        </div>
+        <div class="empty-state" id="renov-empty">
+          <div class="e-icon">↺</div>
+          <div>No hay contratos en proceso de renovación.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== INSPECCIONES ===== -->
+    <div id="view-inspecciones" class="view" style="display:none">
+      <div class="db-toolbar">
+        <div class="section-title" style="margin:0; flex:1">🔍 Inspecciones</div>
+        <button class="add-btn" onclick="openInspeccion()">＋ Nueva inspección</button>
+      </div>
+      <div class="db-table">
+        <div class="insp-row header-row">
+          <div>Propiedad</div>
+          <div>Estado</div>
+          <div>Inquilino</div>
+          <div></div>
+        </div>
+        <div id="insp-rows"></div>
+        <div class="empty-state" id="insp-empty">
+          <div class="e-icon">🔍</div>
+          <div>No hay inspecciones registradas.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ===== MODAL NUEVO/EDITAR CONTRATO ===== -->
+<div class="modal-backdrop" id="modal-contrato">
+  <div class="modal">
+    <div class="modal-title">📄 <span id="modal-contrato-title">Nuevo contrato</span></div>
+    
+    <!-- TABS -->
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab(0)">🏠 Contrato</button>
+      <button class="modal-tab" onclick="switchTab(1)">👤 Propietario</button>
+      <button class="modal-tab" onclick="switchTab(2)">💳 Pagos</button>
+      <button class="modal-tab" onclick="switchTab(3)">📋 Canon</button>
+    </div>
+
+    <!-- TAB 0: CONTRATO -->
+    <div class="tab-section active" id="tab-0">
+      <div class="form-section-label">🏠 Datos del inmueble y contrato</div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: span 2">
+          <label>Nombre / Propiedad *</label>
+          <input type="text" id="f-nombre" placeholder="Ej: Apto. Aqualina 3-3">
+        </div>
+        <div class="field" style="grid-column: span 2">
+          <label>Dirección del inmueble</label>
+          <input type="text" id="f-direccion" placeholder="Ej: Urb. Las Acacias, Calle 3, Casa #12, Valencia">
+        </div>
+      </div>
+      <div class="form-section-label">👤 Datos del inquilino</div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: span 2">
+          <label>Nombre completo del inquilino *</label>
+          <input type="text" id="f-inquilino" placeholder="Nombre completo o razón social">
+        </div>
+        <div class="field">
+          <label>Tipo de persona</label>
+          <select id="f-inq-tipo" onchange="toggleInqJuridico()">
+            <option value="Natural">Natural (C.I.)</option>
+            <option value="Juridica">Jurídica (RIF)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="f-inq-doc-label">Cédula de identidad</label>
+          <input type="text" id="f-inq-doc" placeholder="Ej: V-12.345.678">
+        </div>
+        <div class="field" id="inq-rep-wrap" style="display:none; grid-column: span 2">
+          <label>Representante legal</label>
+          <input type="text" id="f-inq-rep" placeholder="Nombre del representante legal">
+        </div>
+        <div class="field" id="inq-repci-wrap" style="display:none">
+          <label>C.I. del representante</label>
+          <input type="text" id="f-inq-rep-ci" placeholder="Ej: V-8.500.000">
+        </div>
+        <div class="field" id="inq-repcargo-wrap" style="display:none">
+          <label>Cargo</label>
+          <input type="text" id="f-inq-rep-cargo" placeholder="Ej: Director General">
+        </div>
+        <div class="field">
+          <label>Canon mensual (USD) *</label>
+          <input type="number" id="f-monto" placeholder="Ej: 320" min="0">
+        </div>
+        <div class="field">
+          <label>Frecuencia de pago</label>
+          <select id="f-frecuencia">
+            <option value="Mensual">Mensual</option>
+            <option value="Bimestral">Bimestral</option>
+            <option value="Trimestral">Trimestral</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select id="f-estado">
+            <option value="Activo">Activo</option>
+            <option value="Por vencer">Por vencer</option>
+            <option value="Renovación">Renovación</option>
+            <option value="Vencido">Vencido</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Depósito (USD)</label>
+          <input type="number" id="f-deposito" placeholder="Ej: 640" min="0">
+        </div>
+        <div class="field">
+          <label>Fecha inicio</label>
+          <input type="date" id="f-inicio">
+        </div>
+        <div class="field">
+          <label>Fecha vencimiento</label>
+          <input type="date" id="f-vencimiento">
+        </div>
+        <div class="field">
+          <label>Último pago registrado</label>
+          <input type="date" id="f-ultimo-pago">
+          <span class="hint">Se usará para calcular el próximo cobro</span>
+        </div>
+        <div class="field">
+          <label>Próx. cobro (auto)</label>
+          <input type="date" id="f-prox-cobro" readonly style="background:var(--surface2); color:var(--accent); font-weight:600;">
+          <span class="hint">Calculado automáticamente</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: PROPIETARIO -->
+    <div class="tab-section" id="tab-1">
+      <div class="form-section-label">👤 Propietario 1</div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: span 2">
+          <label>Nombre y apellido</label>
+          <input type="text" id="f-prop1-nombre" placeholder="Nombre completo">
+        </div>
+        <div class="field">
+          <label>Cédula de identidad</label>
+          <input type="text" id="f-prop1-ci" placeholder="Ej: V-12.345.678">
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="tel" id="f-prop1-tel" placeholder="Ej: 0414-1234567">
+        </div>
+      </div>
+
+      <div class="form-section-label" style="margin-top:14px">👤 Propietario 2 <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); font-size:10px;">(opcional)</span></div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: span 2">
+          <label>Nombre y apellido</label>
+          <input type="text" id="f-prop2-nombre" placeholder="Nombre completo">
+        </div>
+        <div class="field">
+          <label>Cédula de identidad</label>
+          <input type="text" id="f-prop2-ci" placeholder="Ej: V-12.345.678">
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="tel" id="f-prop2-tel" placeholder="Ej: 0414-1234567">
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PAGOS -->
+    <div class="tab-section" id="tab-2">
+      <div class="form-section-label">💳 Responsable de pagos</div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: span 2">
+          <label>¿Quién realiza los pagos?</label>
+          <input type="text" id="f-pagador" placeholder="Nombre (puede ser distinto al inquilino)">
+        </div>
+        <div class="field">
+          <label>Teléfono del pagador</label>
+          <input type="tel" id="f-pagador-tel" placeholder="Ej: 0424-1234567">
+        </div>
+        <div class="field">
+          <label>Relación con inquilino</label>
+          <input type="text" id="f-pagador-rel" placeholder="Ej: Empresa empleadora, familiar">
+        </div>
+      </div>
+
+      <div class="form-section-label" style="margin-top:14px">💵 Método de pago aceptado</div>
+      <div class="form-grid tri">
+        <div class="field" style="grid-column: span 3">
+          <label>Método(s) preferido(s)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;" id="metodos-container">
+            <label style="text-transform:none; letter-spacing:0; display:flex; gap:6px; align-items:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);">
+              <input type="checkbox" id="m-efectivo" value="Efectivo"> 💵 Efectivo
+            </label>
+            <label style="text-transform:none; letter-spacing:0; display:flex; gap:6px; align-items:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);">
+              <input type="checkbox" id="m-zelle" value="Zelle"> 🇺🇸 Zelle
+            </label>
+            <label style="text-transform:none; letter-spacing:0; display:flex; gap:6px; align-items:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);">
+              <input type="checkbox" id="m-usdt" value="USDT"> 🔶 USDT
+            </label>
+            <label style="text-transform:none; letter-spacing:0; display:flex; gap:6px; align-items:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);">
+              <input type="checkbox" id="m-pagomovil" value="Pago Móvil"> 📱 Pago Móvil
+            </label>
+            <label style="text-transform:none; letter-spacing:0; display:flex; gap:6px; align-items:center; cursor:pointer; font-size:13px; font-weight:500; color:var(--text2);">
+              <input type="checkbox" id="m-transferencia" value="Transferencia"> 🏦 Transferencia
+            </label>
+          </div>
+        </div>
+        <div class="field" style="grid-column: span 3">
+          <label>Datos de cuenta / wallet (opcional)</label>
+          <input type="text" id="f-cuenta" placeholder="Nro. cuenta, email Zelle, wallet USDT...">
+        </div>
+        <div class="field" style="grid-column: span 3">
+          <label>Monto del canon a cobrar (USD)</label>
+          <input type="number" id="f-monto-cobro" placeholder="Se toma del campo Canon si está vacío" min="0">
+          <span class="hint">Déjalo vacío para usar el canon del contrato. Útil si el monto varía por período.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CANON -->
+    <div class="tab-section" id="tab-3">
+      <div class="form-section-label">📋 Condiciones del canon</div>
+      <div class="form-grid full">
+        <div class="field">
+          <label>¿Tiene condiciones especiales de ajuste?</label>
+          <select id="f-canon-cond" onchange="toggleCanonCond()">
+            <option value="">Sin condiciones especiales</option>
+            <option value="Indexado">Indexado (inflación / BCV)</option>
+            <option value="Revisión periódica">Revisión periódica acordada</option>
+            <option value="Fijo">Fijo sin ajuste</option>
+            <option value="Otro">Otro (especificar)</option>
+          </select>
+        </div>
+        <div class="field" id="canon-desc-field" style="display:none">
+          <label>Descripción de la condición</label>
+          <textarea id="f-canon-desc" placeholder="Detalla la condición de ajuste del canon..."></textarea>
+        </div>
+        <div class="field">
+          <label>Fecha de evaluación del canon</label>
+          <input type="date" id="f-canon-fecha">
+          <span class="hint">Fecha en que se revisará o ajustará el canon</span>
+        </div>
+        <div class="field">
+          <label>Porcentaje o monto de ajuste estimado</label>
+          <input type="text" id="f-canon-ajuste" placeholder="Ej: 10%, +$50 cada 6 meses">
+        </div>
+        <div class="field">
+          <label>Observaciones adicionales</label>
+          <textarea id="f-observaciones" placeholder="Cualquier nota relevante sobre el contrato..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('modal-contrato')">Cancelar</button>
+      <button class="btn primary" onclick="saveContrato()">Guardar contrato</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVA INSPECCIÓN ===== -->
+<div class="modal-backdrop" id="modal-inspeccion">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">🔍 Nueva inspección</div>
+    <div class="form-grid full">
+      <div class="field">
+        <label>Propiedad</label>
+        <input type="text" id="i-propiedad" placeholder="Ej: Galpón 1 Altos de Castillito">
+      </div>
+      <div class="field">
+        <label>Inquilino</label>
+        <input type="text" id="i-inquilino" placeholder="Nombre del inquilino">
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="i-estado">
+          <option value="Pendiente">Pendiente</option>
+          <option value="Programada">Programada</option>
+          <option value="Completada">Completada</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('modal-inspeccion')">Cancelar</button>
+      <button class="btn primary" onclick="saveInspeccion()">Guardar inspección</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PANEL DE DETALLE ===== -->
+<div class="detail-backdrop" id="detail-backdrop" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detail-panel">
+    <button class="detail-close" onclick="closeDetailPanel()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL REGISTRAR PAGO ===== -->
+<div class="modal-backdrop" id="modal-pago">
+  <div class="modal" style="width:440px">
+    <div class="modal-title">💰 Registrar pago</div>
+    <div id="pago-contrato-info" style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:18px; font-size:13px;">
+    </div>
+    <div class="form-grid full">
+      <div class="field">
+        <label>Fecha del pago *</label>
+        <input type="date" id="p-fecha">
+        <span class="hint">Por defecto: hoy</span>
+      </div>
+      <div class="field">
+        <label>Monto recibido (USD) *</label>
+        <input type="number" id="p-monto" placeholder="Monto cobrado" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Método de pago</label>
+        <select id="p-metodo">
+          <option value="">— Seleccionar —</option>
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Zelle">🇺🇸 Zelle</option>
+          <option value="USDT">🔶 USDT</option>
+          <option value="Pago Móvil">📱 Pago Móvil</option>
+          <option value="Transferencia">🏦 Transferencia</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Referencia / Comprobante</label>
+        <input type="text" id="p-referencia" placeholder="Nro. referencia, confirmación...">
+      </div>
+      <div class="field">
+        <label>Observación</label>
+        <input type="text" id="p-obs" placeholder="Ej: Pago parcial, incluye mora...">
+      </div>
+    </div>
+    <div style="background:var(--accent-light); border:1px solid #C5DECA; border-radius:var(--radius-sm); padding:10px 14px; margin-top:14px; font-size:12px; color:var(--accent);">
+      <strong>📅 Próximo cobro:</strong> <span id="p-prox-label" style="font-family:var(--mono); font-weight:700;"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal('modal-pago')">Cancelar</button>
+      <button class="btn primary" onclick="confirmarPago()">✓ Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICACIÓN -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ===================== DATA STORE =====================
+let contratos = JSON.parse(localStorage.getItem('crm_contratos_v2') || '[]');
+let inspecciones = JSON.parse(localStorage.getItem('crm_inspecciones') || '[]');
+let editingId = null;
+let activeTab = 0;
+
+// ===================== UTILS =====================
+function save() {
+  localStorage.setItem('crm_contratos_v2', JSON.stringify(contratos));
+  localStorage.setItem('crm_inspecciones', JSON.stringify(inspecciones));
+}
+
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function diasParaVencer(fechaStr) {
+  if (!fechaStr) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return Math.round((new Date(fechaStr) - hoy) / 86400000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-VE', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-VE', { day:'2-digit', month:'short' });
+}
+
+function badgeClass(estado) {
+  if (estado === 'Activo') return 'green';
+  if (estado === 'Por vencer') return 'amber';
+  if (estado === 'Renovación') return 'red';
+  return 'gray';
+}
+
+function ingresoMensual(monto, frecuencia) {
+  const m = parseFloat(monto) || 0;
+  if (frecuencia === 'Trimestral') return m / 3;
+  if (frecuencia === 'Bimestral') return m / 2;
+  return m;
+}
+
+// ===================== CÁLCULO PRÓXIMO COBRO =====================
+function calcProxCobro(ultimoPago, frecuencia) {
+  if (!ultimoPago) return null;
+  const d = new Date(ultimoPago + 'T00:00:00');
+  const meses = frecuencia === 'Trimestral' ? 3 : frecuencia === 'Bimestral' ? 2 : 1;
+  d.setMonth(d.getMonth() + meses);
+  return d.toISOString().split('T')[0];
+}
+
+function proxCobroStr(c) {
+  if (c.proxCobro) return c.proxCobro;
+  if (c.ultimoPago) return calcProxCobro(c.ultimoPago, c.frecuencia);
+  return null;
+}
+
+function cobroChip(c) {
+  const fecha = proxCobroStr(c);
+  if (!fecha) return '<span style="color:var(--text3);font-size:11px">—</span>';
+  const dias = diasParaVencer(fecha);
+  if (dias === null) return '<span style="color:var(--text3);font-size:11px">—</span>';
+  const label = formatDateShort(fecha);
+  if (dias <= 0) return `<span class="cobro-chip hoy">🔴 ${dias === 0 ? 'HOY' : 'VENCIDO'}</span>`;
+  if (dias <= 7) return `<span class="cobro-chip hoy">⚡ ${label}</span>`;
+  if (dias <= 15) return `<span class="cobro-chip pronto">🟡 ${label}</span>`;
+  return `<span class="cobro-chip ok">✓ ${label}</span>`;
+}
+
+// ===================== TABS DEL MODAL =====================
+function switchTab(n) {
+  activeTab = n;
+  document.querySelectorAll('.tab-section').forEach((s, i) => s.classList.toggle('active', i === n));
+  document.querySelectorAll('.modal-tab').forEach((t, i) => t.classList.toggle('active', i === n));
+}
+
+function toggleInqJuridico() {
+  const tipo = document.getElementById('f-inq-tipo').value;
+  const isJ = tipo === 'Juridica';
+  document.getElementById('f-inq-doc-label').textContent = isJ ? 'RIF' : 'Cédula de identidad';
+  document.getElementById('f-inq-doc').placeholder = isJ ? 'Ej: J-12345678-9' : 'Ej: V-12.345.678';
+  ['inq-rep-wrap','inq-repci-wrap','inq-repcargo-wrap'].forEach(id => {
+    document.getElementById(id).style.display = isJ ? 'flex' : 'none';
+  });
+}
+
+function toggleCanonCond() {
+  const val = document.getElementById('f-canon-cond').value;
+  document.getElementById('canon-desc-field').style.display = val && val !== 'Fijo' ? 'block' : 'none';
+}
+
+// Auto-calcular próximo cobro al cambiar último pago o frecuencia
+function recalcProxCobro() {
+  const up = document.getElementById('f-ultimo-pago').value;
+  const fr = document.getElementById('f-frecuencia').value;
+  const prox = up ? calcProxCobro(up, fr) : '';
+  document.getElementById('f-prox-cobro').value = prox;
+}
+
+document.getElementById('f-ultimo-pago').addEventListener('change', recalcProxCobro);
+document.getElementById('f-frecuencia').addEventListener('change', recalcProxCobro);
+
+// ===================== STATS =====================
+function updateStats() {
+  const activos = contratos.filter(c => c.estado === 'Activo').length;
+  const vencer = contratos.filter(c => {
+    const d = diasParaVencer(c.vencimiento);
+    return c.estado !== 'Vencido' && d !== null && d >= 0 && d <= 60;
+  }).length;
+  const renov = contratos.filter(c => c.estado === 'Renovación').length;
+  const insp = inspecciones.filter(i => i.estado === 'Pendiente').length;
+  const ingresos = contratos
+    .filter(c => c.estado === 'Activo' || c.estado === 'Por vencer')
+    .reduce((sum, c) => sum + ingresoMensual(c.monto, c.frecuencia), 0);
+
+  document.getElementById('stat-activos').textContent = activos;
+  document.getElementById('stat-vencer').textContent = vencer;
+  document.getElementById('stat-renov').textContent = renov;
+  document.getElementById('stat-insp').textContent = insp;
+  document.getElementById('stat-ingresos').textContent = '$' + Math.round(ingresos).toLocaleString('es');
+  document.getElementById('sb-total').textContent = contratos.length;
+  document.getElementById('sb-vencer').textContent = vencer;
+  document.getElementById('sb-renov').textContent = renov;
+  document.getElementById('sb-insp').textContent = insp;
+}
+
+// ===================== ALERTAS =====================
+function updateAlerts() {
+  const container = document.getElementById('alerts-container');
+  container.innerHTML = '';
+  const alerts = [];
+
+  contratos.forEach(c => {
+    const dias = diasParaVencer(c.vencimiento);
+    if (dias !== null && dias <= 30 && dias >= 0 && c.estado !== 'Vencido') {
+      alerts.push({ type: 'red', icon: '🔴', title: `${c.nombre} — vence ${formatDate(c.vencimiento)}`,
+        meta: [`👤 ${c.inquilino}`, `$${c.monto}/${c.frecuencia.toLowerCase()}`, `⚠️ Vence en ${dias} día${dias !== 1 ? 's' : ''}`],
+        badge: { text: `${dias}d`, cls: 'red' }, dias });
+    } else if (dias !== null && dias <= 60 && dias > 30 && c.estado !== 'Vencido') {
+      alerts.push({ type: 'amber', icon: '🟡', title: `${c.nombre} — vence ${formatDate(c.vencimiento)}`,
+        meta: [`👤 ${c.inquilino}`, `$${c.monto}/${c.frecuencia.toLowerCase()}`, `Quedan ~${dias} días`],
+        badge: { text: `${dias}d`, cls: 'amber' }, dias });
+    } else if (dias !== null && dias < 0 && c.estado !== 'Vencido') {
+      alerts.push({ type: 'red', icon: '🔴', title: `VENCIDO: ${c.nombre}`,
+        meta: [`👤 ${c.inquilino}`, `$${c.monto}/${c.frecuencia.toLowerCase()}`, `Venció hace ${Math.abs(dias)} días`],
+        badge: { text: 'VENCIDO', cls: 'red' }, dias });
+    }
+
+    // Alerta de cobro próximo
+    const prox = proxCobroStr(c);
+    if (prox) {
+      const diasCobro = diasParaVencer(prox);
+      if (diasCobro !== null && diasCobro >= 0 && diasCobro <= 5) {
+        alerts.push({ type: 'purple', icon: '💰', title: `Cobro próximo: ${c.nombre}`,
+          meta: [`👤 ${c.inquilino}`, `$${c.monto} · ${c.frecuencia.toLowerCase()}`, `Cobrar el ${formatDate(prox)}`],
+          badge: { text: diasCobro === 0 ? 'HOY' : `en ${diasCobro}d`, cls: 'purple' }, dias: diasCobro + 0.1 });
+      } else if (diasCobro !== null && diasCobro < 0) {
+        alerts.push({ type: 'purple', icon: '⚠️', title: `Cobro pendiente: ${c.nombre}`,
+          meta: [`👤 ${c.inquilino}`, `$${c.monto} · ${c.frecuencia.toLowerCase()}`, `Debió cobrarse el ${formatDate(prox)}`],
+          badge: { text: `${Math.abs(diasCobro)}d atrás`, cls: 'red' }, dias: diasCobro });
+      }
+    }
+
+    // Alerta evaluación de canon
+    if (c.canonFecha) {
+      const diasCanon = diasParaVencer(c.canonFecha);
+      if (diasCanon !== null && diasCanon >= 0 && diasCanon <= 30) {
+        alerts.push({ type: 'blue', icon: '📋', title: `Evaluar canon: ${c.nombre}`,
+          meta: [`👤 ${c.inquilino}`, `Canon actual: $${c.monto}`, `Evaluación: ${formatDate(c.canonFecha)}`],
+          badge: { text: diasCanon === 0 ? 'HOY' : `${diasCanon}d`, cls: 'blue' }, dias: diasCanon + 0.2 });
+      }
+    }
+  });
+
+  contratos.filter(c => c.estado === 'Renovación').forEach(c => {
+    alerts.push({ type: 'amber', icon: '↺', title: `Renovación pendiente: ${c.nombre}`,
+      meta: [`👤 ${c.inquilino}`, `$${c.monto}/${c.frecuencia.toLowerCase()}`, `En proceso de renovación`],
+      badge: null, dias: 999 });
+  });
+
+  inspecciones.filter(i => i.estado === 'Pendiente').forEach(i => {
+    alerts.push({ type: 'blue', icon: '🔵', title: `Inspección pendiente — ${i.propiedad}`,
+      meta: [`👤 ${i.inquilino}`, `Sin fecha programada`], badge: null, dias: 1000 });
+  });
+
+  alerts.sort((a, b) => (a.dias ?? 9999) - (b.dias ?? 9999));
+
+  if (alerts.length === 0) {
+    container.innerHTML = '<div class="no-alerts">✅ Todo en orden — sin alertas activas.</div>';
+    return;
+  }
+  alerts.forEach(a => {
+    const div = document.createElement('div');
+    div.className = `alert-card ${a.type}`;
+    div.innerHTML = `
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-meta">${a.meta.map(m => `<span>${m}</span>`).join('')}</div>
+      </div>
+      ${a.badge ? `<div class="alert-days ${a.badge.cls}">${a.badge.text}</div>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ===================== RENDER ROWS =====================
+function makeRow(c, tableId, showDel = true) {
+  const dias = diasParaVencer(c.vencimiento);
+  let diasTxt = '—', diasColor = '';
+  if (dias !== null) {
+    diasTxt = dias < 0 ? `−${Math.abs(dias)}d` : `${dias}d`;
+    diasColor = dias < 0 ? 'color:var(--red)' : dias <= 30 ? 'color:var(--red)' : dias <= 60 ? 'color:var(--amber)' : 'color:var(--text3)';
+  }
+  const row = document.createElement('div');
+  row.className = 'db-row';
+  row.dataset.id = c.id;
+  row.innerHTML = `
+    <div class="db-cell-name">${c.nombre}</div>
+    <div class="db-cell-tenant">${c.inquilino}</div>
+    <div class="db-cell-amt">$${parseFloat(c.monto).toLocaleString('es')}</div>
+    <div><span class="badge ${badgeClass(c.estado)}">${c.estado}</span></div>
+    <div class="db-cell-date">${formatDate(c.vencimiento)}</div>
+    <div class="db-cell-cobro">${cobroChip(c)}</div>
+    ${showDel ? `<div class="row-actions"><span class="detail-hint">→ ver</span><button class="pay-btn" onclick="openRegistrarPago('${c.id}')" title="Registrar pago">💰</button><button class="del-btn" onclick="deleteContrato('${c.id}')" title="Eliminar">✕</button></div>` : '<div class="row-actions"><span class="detail-hint">→ ver</span></div>'}
+  `;
+  row.onclick = (e) => {
+    // Don't open detail if clicking a button inside the row
+    if (e.target.closest('button')) return;
+    openDetailPanel(c.id);
+  };
+  row.style.cursor = 'pointer';
+  return row;
+}
+
+function renderTables() {
+  const tables = {
+    dash:   { el: document.getElementById('dash-table'),   empty: document.getElementById('dash-empty'),   filter: null },
+    full:   { el: document.getElementById('full-table'),   empty: document.getElementById('full-empty'),   filter: null },
+    vencer: { el: document.getElementById('vencer-table'), empty: document.getElementById('vencer-empty'), filter: c => { const d = diasParaVencer(c.vencimiento); return d !== null && d <= 60 && c.estado !== 'Vencido'; } },
+    renov:  { el: document.getElementById('renov-table'),  empty: document.getElementById('renov-empty'),  filter: c => c.estado === 'Renovación' },
+  };
+  Object.entries(tables).forEach(([key, t]) => {
+    [...t.el.children].forEach(ch => { if (!ch.classList.contains('header-row') && !ch.classList.contains('empty-state')) ch.remove(); });
+    const filtered = t.filter ? contratos.filter(t.filter) : contratos;
+    const slice = filtered.slice(0, key === 'dash' ? 8 : 999);
+    t.empty.style.display = slice.length === 0 ? '' : 'none';
+    slice.forEach(c => t.el.insertBefore(makeRow(c, key), t.empty));
+  });
+
+  const inspRows = document.getElementById('insp-rows');
+  const inspEmpty = document.getElementById('insp-empty');
+  inspRows.innerHTML = '';
+  inspEmpty.style.display = inspecciones.length === 0 ? '' : 'none';
+  inspecciones.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'insp-row';
+    const badgeCls = i.estado === 'Pendiente' ? 'amber' : i.estado === 'Completada' ? 'green' : 'gray';
+    row.innerHTML = `
+      <div class="db-cell-name">${i.propiedad}</div>
+      <div><span class="badge ${badgeCls}">${i.estado}</span></div>
+      <div class="db-cell-tenant">${i.inquilino}</div>
+      <button class="del-btn" onclick="deleteInspeccion('${i.id}')" title="Eliminar">✕</button>
+    `;
+    inspRows.appendChild(row);
+  });
+}
+
+function refresh() { updateStats(); updateAlerts(); renderTables(); }
+
+// ===================== DETAIL PANEL =====================
+function openDetailPanel(id) {
+  const c = contratos.find(x => x.id === id);
+  if (!c) return;
+  const prox = proxCobroStr(c);
+  const diasCobro = prox ? diasParaVencer(prox) : null;
+  let cobroColor = 'var(--accent)';
+  let cobroLabel = '';
+  if (diasCobro !== null) {
+    if (diasCobro <= 0) cobroColor = 'var(--red)';
+    else if (diasCobro <= 7) cobroColor = 'var(--red)';
+    else if (diasCobro <= 15) cobroColor = 'var(--amber)';
+    cobroLabel = diasCobro <= 0 ? `(hace ${Math.abs(diasCobro)} día${Math.abs(diasCobro)!==1?'s':''})` : `(en ${diasCobro} día${diasCobro!==1?'s':''})`;
+  }
+
+  const metodos = c.metodosPago ? c.metodosPago.join(', ') : '—';
+  const canonCond = c.canonCond || 'Sin condiciones especiales';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-prop">${c.nombre}</div>
+    <div class="detail-sub">${c.frecuencia} · $${parseFloat(c.monto).toLocaleString('es')} USD · <span class="badge ${badgeClass(c.estado)}">${c.estado}</span></div>
+
+    ${prox ? `
+    <div class="detail-cobro-box">
+      <div class="detail-cobro-label">💰 Próximo cobro</div>
+      <div class="detail-cobro-date" style="color:${cobroColor}">${formatDate(prox)}</div>
+      <div class="detail-cobro-sub">${cobroLabel} · $${parseFloat(c.monto).toLocaleString('es')} USD</div>
+    </div>` : ''}
+
+    <div class="detail-section">
+      <div class="detail-section-title">🏠 Contrato</div>
+      <div class="detail-row"><span class="detail-label">Inquilino</span><span class="detail-val">${c.inquilino}</span></div>
+      ${c.direccion ? `<div class="detail-row"><span class="detail-label">Dirección</span><span class="detail-val">${c.direccion}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">Inicio</span><span class="detail-val">${formatDate(c.inicio)}</span></div>
+      <div class="detail-row"><span class="detail-label">Vencimiento</span><span class="detail-val">${formatDate(c.vencimiento)}</span></div>
+      <div class="detail-row"><span class="detail-label">Depósito</span><span class="detail-val">${c.deposito ? '$' + parseFloat(c.deposito).toLocaleString('es') + ' USD' : '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Último pago</span><span class="detail-val">${formatDate(c.ultimoPago)}</span></div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">👤 Inquilino</div>
+      <div class="detail-row"><span class="detail-label">Tipo persona</span><span class="detail-val">${c.inqTipo || 'Natural'}</span></div>
+      <div class="detail-row"><span class="detail-label">C.I. / RIF</span><span class="detail-val">${c.inqDoc || '—'}</span></div>
+      ${c.inqTipo === 'Juridica' ? `
+      <div class="detail-row"><span class="detail-label">Rep. legal</span><span class="detail-val">${c.inqRep || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">C.I. representante</span><span class="detail-val">${c.inqRepCI || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Cargo</span><span class="detail-val">${c.inqRepCargo || '—'}</span></div>` : ''}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">🏠 Propietario(s)</div>
+      ${c.prop1Nombre ? `
+      <div class="detail-row"><span class="detail-label">Propietario 1</span><span class="detail-val">${c.prop1Nombre}</span></div>
+      ${c.prop1CI ? `<div class="detail-row"><span class="detail-label">C.I.</span><span class="detail-val">${c.prop1CI}</span></div>` : ''}
+      ${c.prop1Tel ? `<div class="detail-row"><span class="detail-label">Teléfono</span><span class="detail-val">${c.prop1Tel}</span></div>` : ''}` : '<div class="detail-row"><span class="detail-label">—</span><span class="detail-val">Sin datos</span></div>'}
+      ${c.prop2Nombre ? `
+      <div style="height:6px"></div>
+      <div class="detail-row"><span class="detail-label">Propietario 2</span><span class="detail-val">${c.prop2Nombre}</span></div>
+      ${c.prop2CI ? `<div class="detail-row"><span class="detail-label">C.I.</span><span class="detail-val">${c.prop2CI}</span></div>` : ''}
+      ${c.prop2Tel ? `<div class="detail-row"><span class="detail-label">Teléfono</span><span class="detail-val">${c.prop2Tel}</span></div>` : ''}` : ''}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">💳 Pagos</div>
+      <div class="detail-row"><span class="detail-label">Pagador</span><span class="detail-val">${c.pagador || c.inquilino}</span></div>
+      <div class="detail-row"><span class="detail-label">Teléfono</span><span class="detail-val">${c.pagadorTel || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Método(s)</span><span class="detail-val">${metodos}</span></div>
+      ${c.cuenta ? `<div class="detail-row"><span class="detail-label">Cuenta / Wallet</span><span class="detail-val">${c.cuenta}</span></div>` : ''}
+      ${c.montoCobro ? `<div class="detail-row"><span class="detail-label">Monto a cobrar</span><span class="detail-val" style="font-weight:700;color:var(--accent)">$${parseFloat(c.montoCobro).toLocaleString('es')} USD</span></div>` : ''}
+    </div>
+
+    ${c.historialPagos && c.historialPagos.length > 0 ? `
+    <div class="detail-section">
+      <div class="detail-section-title">🧾 Historial de pagos</div>
+      ${c.historialPagos.slice(0,5).map(p => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px;">
+          <span style="color:var(--text3); font-family:var(--mono);">${formatDate(p.fecha)}</span>
+          <span style="font-weight:700; font-family:var(--mono); color:var(--accent);">$${parseFloat(p.monto).toLocaleString('es')}</span>
+          <span style="color:var(--text2);">${p.metodo || '—'}</span>
+          ${p.referencia ? `<span style="color:var(--text3); font-size:10px;">#${p.referencia}</span>` : '<span></span>'}
+        </div>`).join('')}
+      ${c.historialPagos.length > 5 ? `<div style="font-size:11px; color:var(--text3); margin-top:6px; text-align:center;">+${c.historialPagos.length - 5} pagos anteriores</div>` : ''}
+    </div>` : ''}
+
+    <div class="detail-section">
+      <div class="detail-section-title">📋 Canon</div>
+      <div class="detail-row"><span class="detail-label">Condición</span><span class="detail-val">${canonCond}</span></div>
+      ${c.canonDesc ? `<div class="detail-row"><span class="detail-label">Detalle</span><span class="detail-val">${c.canonDesc}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">Ajuste estimado</span><span class="detail-val">${c.canonAjuste || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Fecha evaluación</span><span class="detail-val">${formatDate(c.canonFecha)}</span></div>
+      ${c.observaciones ? `<div class="detail-row"><span class="detail-label">Observaciones</span><span class="detail-val">${c.observaciones}</span></div>` : ''}
+    </div>
+
+    <div class="detail-actions" style="flex-direction:column; gap:10px;">
+      <button class="btn primary" onclick="openRegistrarPago('${c.id}')" style="width:100%; justify-content:center; display:flex; align-items:center; gap:6px; font-size:14px; padding:10px 18px;">💰 Registrar pago</button>
+      <button class="btn secondary" onclick="closeDetailPanel(); setTimeout(()=>editContrato('${c.id}'),120);" style="width:100%; justify-content:center; display:flex; align-items:center; gap:6px; font-size:13px; padding:9px 18px; border-color:var(--accent); color:var(--accent);">✏️ Editar contrato</button>
+    </div>
+  `;
+  document.getElementById('detail-backdrop').classList.add('open');
+}
+
+function closeDetailPanel() {
+  document.getElementById('detail-backdrop').classList.remove('open');
+}
+function closeDetail(e) {
+  if (e.target === document.getElementById('detail-backdrop')) closeDetailPanel();
+}
+
+// ===================== MODAL CONTRATO =====================
+function clearForm() {
+  ['f-nombre','f-inquilino','f-direccion','f-monto','f-deposito','f-inicio','f-vencimiento',
+   'f-ultimo-pago','f-prox-cobro',
+   'f-inq-doc','f-inq-rep','f-inq-rep-ci','f-inq-rep-cargo',
+   'f-prop1-nombre','f-prop1-ci','f-prop1-tel',
+   'f-prop2-nombre','f-prop2-ci','f-prop2-tel',
+   'f-pagador','f-pagador-tel','f-pagador-rel',
+   'f-cuenta','f-monto-cobro','f-canon-fecha','f-canon-ajuste','f-canon-desc','f-observaciones'
+  ].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('f-estado').value = 'Activo';
+  document.getElementById('f-frecuencia').value = 'Mensual';
+  document.getElementById('f-inq-tipo').value = 'Natural';
+  document.getElementById('f-canon-cond').value = '';
+  ['m-efectivo','m-zelle','m-usdt','m-pagomovil','m-transferencia'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  toggleInqJuridico();
+  toggleCanonCond();
+}
+
+function openContrato() {
+  editingId = null;
+  document.getElementById('modal-contrato-title').textContent = 'Nuevo contrato';
+  clearForm();
+  switchTab(0);
+  document.getElementById('modal-contrato').classList.add('open');
+}
+
+function editContrato(id) {
+  const c = contratos.find(x => x.id === id);
+  if (!c) return;
+  editingId = id;
+  clearForm();
+  document.getElementById('modal-contrato-title').textContent = 'Editar contrato';
+  document.getElementById('f-nombre').value = c.nombre || '';
+  document.getElementById('f-inquilino').value = c.inquilino || '';
+  document.getElementById('f-direccion').value = c.direccion || '';
+  document.getElementById('f-monto').value = c.monto || '';
+  document.getElementById('f-deposito').value = c.deposito || '';
+  document.getElementById('f-frecuencia').value = c.frecuencia || 'Mensual';
+  document.getElementById('f-estado').value = c.estado || 'Activo';
+  document.getElementById('f-inicio').value = c.inicio || '';
+  document.getElementById('f-vencimiento').value = c.vencimiento || '';
+  document.getElementById('f-ultimo-pago').value = c.ultimoPago || '';
+  document.getElementById('f-prox-cobro').value = c.proxCobro || (c.ultimoPago ? calcProxCobro(c.ultimoPago, c.frecuencia) : '');
+  // Inquilino (datos adicionales)
+  document.getElementById('f-inq-tipo').value = c.inqTipo || 'Natural';
+  document.getElementById('f-inq-doc').value = c.inqDoc || '';
+  document.getElementById('f-inq-rep').value = c.inqRep || '';
+  document.getElementById('f-inq-rep-ci').value = c.inqRepCI || '';
+  document.getElementById('f-inq-rep-cargo').value = c.inqRepCargo || '';
+  toggleInqJuridico();
+  // Propietarios
+  document.getElementById('f-prop1-nombre').value = c.prop1Nombre || '';
+  document.getElementById('f-prop1-ci').value = c.prop1CI || '';
+  document.getElementById('f-prop1-tel').value = c.prop1Tel || '';
+  document.getElementById('f-prop2-nombre').value = c.prop2Nombre || '';
+  document.getElementById('f-prop2-ci').value = c.prop2CI || '';
+  document.getElementById('f-prop2-tel').value = c.prop2Tel || '';
+  // Pagos
+  document.getElementById('f-pagador').value = c.pagador || '';
+  document.getElementById('f-pagador-tel').value = c.pagadorTel || '';
+  document.getElementById('f-pagador-rel').value = c.pagadorRel || '';
+  document.getElementById('f-cuenta').value = c.cuenta || '';
+  document.getElementById('f-monto-cobro').value = c.montoCobro || '';
+  if (c.metodosPago) {
+    ['m-efectivo','m-zelle','m-usdt','m-pagomovil','m-transferencia'].forEach(id => {
+      const el = document.getElementById(id);
+      el.checked = c.metodosPago.includes(el.value);
+    });
+  }
+  // Canon
+  document.getElementById('f-canon-cond').value = c.canonCond || '';
+  document.getElementById('f-canon-desc').value = c.canonDesc || '';
+  document.getElementById('f-canon-fecha').value = c.canonFecha || '';
+  document.getElementById('f-canon-ajuste').value = c.canonAjuste || '';
+  document.getElementById('f-observaciones').value = c.observaciones || '';
+  toggleCanonCond();
+  switchTab(0);
+  document.getElementById('modal-contrato').classList.add('open');
+}
+
+function saveContrato() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const inquilino = document.getElementById('f-inquilino').value.trim();
+  const monto = document.getElementById('f-monto').value;
+  if (!nombre || !inquilino || !monto) { notify('⚠️ Completa los campos obligatorios (Tab 1)'); return; }
+
+  const metodosPago = ['m-efectivo','m-zelle','m-usdt','m-pagomovil','m-transferencia']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => document.getElementById(id).value);
+
+  const ultimoPago = document.getElementById('f-ultimo-pago').value;
+  const frecuencia = document.getElementById('f-frecuencia').value;
+  const proxCobroVal = document.getElementById('f-prox-cobro').value || (ultimoPago ? calcProxCobro(ultimoPago, frecuencia) : '');
+
+  const c = {
+    id: editingId || Date.now().toString(),
+    nombre, inquilino,
+    direccion: document.getElementById('f-direccion').value.trim(),
+    monto: parseFloat(monto),
+    deposito: document.getElementById('f-deposito').value || '',
+    frecuencia,
+    estado: document.getElementById('f-estado').value,
+    inicio: document.getElementById('f-inicio').value,
+    vencimiento: document.getElementById('f-vencimiento').value,
+    ultimoPago,
+    proxCobro: proxCobroVal,
+    // Inquilino (datos adicionales)
+    inqTipo: document.getElementById('f-inq-tipo').value,
+    inqDoc: document.getElementById('f-inq-doc').value.trim(),
+    inqRep: document.getElementById('f-inq-rep').value.trim(),
+    inqRepCI: document.getElementById('f-inq-rep-ci').value.trim(),
+    inqRepCargo: document.getElementById('f-inq-rep-cargo').value.trim(),
+    // Propietarios
+    prop1Nombre: document.getElementById('f-prop1-nombre').value.trim(),
+    prop1CI: document.getElementById('f-prop1-ci').value.trim(),
+    prop1Tel: document.getElementById('f-prop1-tel').value.trim(),
+    prop2Nombre: document.getElementById('f-prop2-nombre').value.trim(),
+    prop2CI: document.getElementById('f-prop2-ci').value.trim(),
+    prop2Tel: document.getElementById('f-prop2-tel').value.trim(),
+    // Pagos
+    pagador: document.getElementById('f-pagador').value.trim(),
+    pagadorTel: document.getElementById('f-pagador-tel').value.trim(),
+    pagadorRel: document.getElementById('f-pagador-rel').value.trim(),
+    metodosPago,
+    cuenta: document.getElementById('f-cuenta').value.trim(),
+    montoCobro: document.getElementById('f-monto-cobro').value ? parseFloat(document.getElementById('f-monto-cobro').value) : '',
+    historialPagos: editingId ? (contratos.find(x => x.id === editingId)?.historialPagos || []) : [],
+    // Canon
+    canonCond: document.getElementById('f-canon-cond').value,
+    canonDesc: document.getElementById('f-canon-desc').value.trim(),
+    canonFecha: document.getElementById('f-canon-fecha').value,
+    canonAjuste: document.getElementById('f-canon-ajuste').value.trim(),
+    observaciones: document.getElementById('f-observaciones').value.trim(),
+  };
+
+  if (editingId) {
+    contratos[contratos.findIndex(x => x.id === editingId)] = c;
+    notify('✓ Contrato actualizado');
+  } else {
+    contratos.unshift(c);
+    notify('✓ Contrato agregado');
+  }
+  save(); refresh();
+  closeModal('modal-contrato');
+}
+
+// ===================== MODAL REGISTRAR PAGO =====================
+let pagandoId = null;
+
+function openRegistrarPago(id) {
+  const c = contratos.find(x => x.id === id);
+  if (!c) return;
+  pagandoId = id;
+
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('p-fecha').value = hoy;
+  document.getElementById('p-monto').value = c.montoCobro || c.monto || '';
+  document.getElementById('p-metodo').value = (c.metodosPago && c.metodosPago.length === 1) ? c.metodosPago[0] : '';
+  document.getElementById('p-referencia').value = '';
+  document.getElementById('p-obs').value = '';
+
+  // Info del contrato
+  const prox = calcProxCobro(hoy, c.frecuencia);
+  document.getElementById('pago-contrato-info').innerHTML = `
+    <div style="font-weight:700; font-size:14px; margin-bottom:4px;">${c.nombre}</div>
+    <div style="color:var(--text2);">👤 ${c.inquilino} · $${parseFloat(c.monto).toLocaleString('es')} · ${c.frecuencia}</div>
+    ${c.direccion ? `<div style="color:var(--text3); font-size:11px; margin-top:3px;">📍 ${c.direccion}</div>` : ''}
+  `;
+  document.getElementById('p-prox-label').textContent = formatDate(prox);
+
+  // Actualizar preview al cambiar fecha
+  document.getElementById('p-fecha').onchange = function() {
+    const np = calcProxCobro(this.value, c.frecuencia);
+    document.getElementById('p-prox-label').textContent = formatDate(np);
+  };
+
+  document.getElementById('modal-pago').classList.add('open');
+}
+
+function confirmarPago() {
+  const fecha = document.getElementById('p-fecha').value;
+  const monto = document.getElementById('p-monto').value;
+  if (!fecha || !monto) { notify('⚠️ Ingresa la fecha y el monto'); return; }
+
+  const idx = contratos.findIndex(x => x.id === pagandoId);
+  if (idx < 0) return;
+  const c = contratos[idx];
+
+  const proxCobro = calcProxCobro(fecha, c.frecuencia);
+
+  // Guardar en historial de pagos
+  if (!c.historialPagos) c.historialPagos = [];
+  c.historialPagos.unshift({
+    fecha,
+    monto: parseFloat(monto),
+    metodo: document.getElementById('p-metodo').value,
+    referencia: document.getElementById('p-referencia').value.trim(),
+    obs: document.getElementById('p-obs').value.trim(),
+  });
+
+  c.ultimoPago = fecha;
+  c.proxCobro = proxCobro;
+
+  contratos[idx] = c;
+  save(); refresh();
+  closeModal('modal-pago');
+  notify(`✓ Pago registrado — próximo cobro: ${formatDate(proxCobro)}`);
+}
+
+function deleteContrato(id) {
+  contratos = contratos.filter(c => c.id !== id);
+  save(); refresh();
+  notify('🗑 Contrato eliminado');
+}
+
+// ===================== INSPECCIONES =====================
+function openInspeccion() {
+  ['i-propiedad','i-inquilino'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('i-estado').value = 'Pendiente';
+  document.getElementById('modal-inspeccion').classList.add('open');
+}
+function saveInspeccion() {
+  const prop = document.getElementById('i-propiedad').value.trim();
+  const inq = document.getElementById('i-inquilino').value.trim();
+  if (!prop) { notify('⚠️ Ingresa la propiedad'); return; }
+  inspecciones.unshift({ id: Date.now().toString(), propiedad: prop, inquilino: inq || '—', estado: document.getElementById('i-estado').value });
+  save(); refresh();
+  closeModal('modal-inspeccion');
+  notify('✓ Inspección agregada');
+}
+function deleteInspeccion(id) {
+  inspecciones = inspecciones.filter(i => i.id !== id);
+  save(); refresh();
+  notify('🗑 Inspección eliminada');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// Auto-estado por vencimiento
+document.getElementById('f-vencimiento').addEventListener('change', function() {
+  const dias = diasParaVencer(this.value);
+  if (dias !== null) {
+    const sel = document.getElementById('f-estado');
+    if (dias < 0) sel.value = 'Vencido';
+    else if (dias <= 60) sel.value = 'Por vencer';
+    else if (sel.value === 'Por vencer' || sel.value === 'Vencido') sel.value = 'Activo';
+  }
+});
+
+// ===================== VIEWS =====================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.getElementById(`view-${name}`).style.display = 'block';
+  const map = { dashboard: 0, contratos: 1, 'por-vencer': 2, renovacion: 3, inspecciones: 4 };
+  document.querySelectorAll('.sidebar-item')[map[name]]?.classList.add('active');
+}
+
+// ===================== EXPORTAR / IMPORTAR =====================
+function exportarDatos() {
+  const datos = {
+    version: 2,
+    exportado: new Date().toISOString(),
+    contratos,
+    inspecciones,
+  };
+  const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `arrendamientos_backup_${fecha}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notify('⬇ Datos exportados correctamente');
+}
+
+function importarDatos(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const datos = JSON.parse(e.target.result);
+      if (!datos.contratos || !Array.isArray(datos.contratos)) {
+        notify('⚠️ Archivo inválido — no se pudo importar'); return;
+      }
+      const confirmar = datos.contratos.length > 0
+        ? confirm(`¿Importar ${datos.contratos.length} contrato(s) y ${datos.inspecciones?.length || 0} inspección(es)?\n\nEsto reemplazará los datos actuales.`)
+        : false;
+      if (!confirmar) { event.target.value = ''; return; }
+      contratos = datos.contratos;
+      inspecciones = datos.inspecciones || [];
+      save(); refresh();
+      notify(`✓ Importados ${contratos.length} contratos y ${inspecciones.length} inspecciones`);
+    } catch(err) {
+      notify('⚠️ Error al leer el archivo');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ===================== INIT =====================
+refresh();
+</script>
+</body>
+</html>
