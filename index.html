@@ -243,15 +243,46 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 <body>
 
 <div class="header">
-  <div class="header-top">
-    <div class="header-icon">🏢</div>
-    <div>
-      <div class="header-title">Control de Arrendamientos</div>
-      <div class="header-sub">Dashboard automático · Carabobo, Venezuela</div>
+  <div class="header-top" style="justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="header-icon">🏢</div>
+      <div>
+        <div class="header-title">Control de Arrendamientos</div>
+        <div class="header-sub">Dashboard automático · Carabobo, Venezuela</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="text-align:right;">
+        <div id="user-role-label" style="font-size:12px; font-weight:600; color:#9ABFB0;"></div>
+        <div id="user-email-label" style="font-size:11px; color:#6B9E8A; font-family:var(--mono);"></div>
+      </div>
+      <button id="btn-logout" style="font-family:var(--sans); font-size:11px; font-weight:600; padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; cursor:pointer;">Salir</button>
     </div>
   </div>
 </div>
 
+<!-- ===== PANTALLA DE LOGIN ===== -->
+<div id="login-screen" style="display:flex; position:fixed; inset:0; background:var(--bg); z-index:300; align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:32px 36px; width:360px; box-shadow:0 20px 60px rgba(0,0,0,.1);">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:32px; margin-bottom:8px;">🏢</div>
+      <div style="font-size:17px; font-weight:700; color:var(--accent);">Control de Arrendamientos</div>
+      <div style="font-size:12px; color:var(--text3); margin-top:4px; font-family:var(--mono);">Ingresa para continuar</div>
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>Correo electrónico</label>
+      <input type="email" id="login-email" placeholder="tucorreo@gmail.com" style="width:100%">
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" style="width:100%">
+    </div>
+    <div id="login-error" style="color:var(--red); font-size:12px; margin-bottom:10px; min-height:16px;"></div>
+    <button id="btn-login" class="btn primary" style="width:100%; justify-content:center; padding:10px;">Ingresar</button>
+  </div>
+</div>
+
+<div id="app-layout" style="display:none">
 <div class="layout">
   <!-- SIDEBAR -->
   <div class="sidebar">
@@ -758,18 +789,128 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 
 <!-- NOTIFICACIÓN -->
 <div class="notif" id="notif"></div>
+</div><!-- /app-layout -->
 
-<script>
+<script type="module">
+// ===================== FIREBASE =====================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAvaFSWenrkCIFknrXy2CbQ9SE2si1c8VQ",
+  authDomain: "arrendamientos-ebd3d.firebaseapp.com",
+  projectId: "arrendamientos-ebd3d",
+  storageBucket: "arrendamientos-ebd3d.firebasestorage.app",
+  messagingSenderId: "163341720033",
+  appId: "1:163341720033:web:039d979ff89862361c1aa0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ===================== ROLES =====================
+// UID del administrador (tú) — se completa automáticamente al iniciar sesión por primera vez
+// Los demás usuarios son colaboradores: pueden agregar y registrar pagos, no borrar
+let currentUser = null;
+let isAdmin = false;
+const ADMIN_EMAIL = ""; // Se detecta desde Firestore — ver lógica abajo
+
 // ===================== DATA STORE =====================
-let contratos = JSON.parse(localStorage.getItem('crm_contratos_v2') || '[]');
-let inspecciones = JSON.parse(localStorage.getItem('crm_inspecciones') || '[]');
+let contratos = [];
+let inspecciones = [];
 let editingId = null;
 let activeTab = 0;
+let unsubContratos = null;
+let unsubInspecciones = null;
+
+// ===================== AUTH UI =====================
+function mostrarLogin() {
+  document.getElementById('app-layout').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-layout').style.display = 'grid';
+  // Mostrar/ocultar botones de borrar según rol
+  actualizarPermisos();
+}
+
+function actualizarPermisos() {
+  // Los botones de eliminar solo los ve el admin
+  document.querySelectorAll('.del-btn').forEach(b => {
+    b.style.display = isAdmin ? '' : 'none';
+  });
+}
+
+async function checkAdmin(uid) {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'admin'));
+    if (snap.exists()) {
+      isAdmin = snap.data().uid === uid;
+    } else {
+      // Primera vez: el primer usuario que inicia sesión es el admin
+      await setDoc(doc(db, 'config', 'admin'), { uid, email: currentUser.email });
+      isAdmin = true;
+    }
+  } catch(e) { isAdmin = false; }
+  document.getElementById('user-role-label').textContent = isAdmin ? '👑 Administrador' : '👤 Colaborador';
+  document.getElementById('user-email-label').textContent = currentUser.email;
+}
+
+function iniciarEscucha() {
+  if (unsubContratos) unsubContratos();
+  if (unsubInspecciones) unsubInspecciones();
+
+  unsubContratos = onSnapshot(collection(db, 'contratos'), snap => {
+    contratos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    contratos.sort((a, b) => (b.creadoEn || 0) - (a.creadoEn || 0));
+    refresh();
+  });
+
+  unsubInspecciones = onSnapshot(collection(db, 'inspecciones'), snap => {
+    inspecciones = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    refresh();
+  });
+}
+
+// Login
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  try {
+    document.getElementById('btn-login').textContent = 'Ingresando...';
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.textContent = 'Correo o contraseña incorrectos';
+    document.getElementById('btn-login').textContent = 'Ingresar';
+  }
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    currentUser = user;
+    await checkAdmin(user.uid);
+    iniciarEscucha();
+    mostrarApp();
+  } else {
+    currentUser = null;
+    isAdmin = false;
+    if (unsubContratos) unsubContratos();
+    if (unsubInspecciones) unsubInspecciones();
+    contratos = []; inspecciones = [];
+    mostrarLogin();
+  }
+});
 
 // ===================== UTILS =====================
-function save() {
-  localStorage.setItem('crm_contratos_v2', JSON.stringify(contratos));
-  localStorage.setItem('crm_inspecciones', JSON.stringify(inspecciones));
+async function save() {
+  // no-op: guardado directo en cada operación
 }
 
 function notify(msg) {
@@ -1230,7 +1371,7 @@ function editContrato(id) {
   document.getElementById('modal-contrato').classList.add('open');
 }
 
-function saveContrato() {
+async function saveContrato() {
   const nombre = document.getElementById('f-nombre').value.trim();
   const inquilino = document.getElementById('f-inquilino').value.trim();
   const monto = document.getElementById('f-monto').value;
@@ -1286,13 +1427,13 @@ function saveContrato() {
   };
 
   if (editingId) {
-    contratos[contratos.findIndex(x => x.id === editingId)] = c;
+    await setDoc(doc(db, 'contratos', editingId), c);
     notify('✓ Contrato actualizado');
   } else {
-    contratos.unshift(c);
+    c.creadoEn = Date.now();
+    await setDoc(doc(db, 'contratos', c.id), c);
     notify('✓ Contrato agregado');
   }
-  save(); refresh();
   closeModal('modal-contrato');
 }
 
@@ -1329,7 +1470,7 @@ function openRegistrarPago(id) {
   document.getElementById('modal-pago').classList.add('open');
 }
 
-function confirmarPago() {
+async function confirmarPago() {
   const fecha = document.getElementById('p-fecha').value;
   const monto = document.getElementById('p-monto').value;
   if (!fecha || !monto) { notify('⚠️ Ingresa la fecha y el monto'); return; }
@@ -1353,15 +1494,14 @@ function confirmarPago() {
   c.ultimoPago = fecha;
   c.proxCobro = proxCobro;
 
-  contratos[idx] = c;
-  save(); refresh();
+  await setDoc(doc(db, 'contratos', c.id), c);
   closeModal('modal-pago');
   notify(`✓ Pago registrado — próximo cobro: ${formatDate(proxCobro)}`);
 }
 
-function deleteContrato(id) {
-  contratos = contratos.filter(c => c.id !== id);
-  save(); refresh();
+async function deleteContrato(id) {
+  if (!isAdmin) { notify('⛔ Solo el administrador puede eliminar'); return; }
+  await deleteDoc(doc(db, 'contratos', id));
   notify('🗑 Contrato eliminado');
 }
 
@@ -1371,18 +1511,18 @@ function openInspeccion() {
   document.getElementById('i-estado').value = 'Pendiente';
   document.getElementById('modal-inspeccion').classList.add('open');
 }
-function saveInspeccion() {
+async function saveInspeccion() {
   const prop = document.getElementById('i-propiedad').value.trim();
   const inq = document.getElementById('i-inquilino').value.trim();
   if (!prop) { notify('⚠️ Ingresa la propiedad'); return; }
-  inspecciones.unshift({ id: Date.now().toString(), propiedad: prop, inquilino: inq || '—', estado: document.getElementById('i-estado').value });
-  save(); refresh();
+  const id = Date.now().toString();
+  await setDoc(doc(db, 'inspecciones', id), { id, propiedad: prop, inquilino: inq || '—', estado: document.getElementById('i-estado').value });
   closeModal('modal-inspeccion');
   notify('✓ Inspección agregada');
 }
-function deleteInspeccion(id) {
-  inspecciones = inspecciones.filter(i => i.id !== id);
-  save(); refresh();
+async function deleteInspeccion(id) {
+  if (!isAdmin) { notify('⛔ Solo el administrador puede eliminar'); return; }
+  await deleteDoc(doc(db, 'inspecciones', id));
   notify('🗑 Inspección eliminada');
 }
 
@@ -1415,7 +1555,7 @@ function showView(name) {
 // ===================== EXPORTAR / IMPORTAR =====================
 function exportarDatos() {
   const datos = {
-    version: 2,
+    version: 3,
     exportado: new Date().toISOString(),
     contratos,
     inspecciones,
@@ -1432,23 +1572,25 @@ function exportarDatos() {
 }
 
 function importarDatos(event) {
+  if (!isAdmin) { notify('⛔ Solo el administrador puede importar datos'); event.target.value = ''; return; }
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const datos = JSON.parse(e.target.result);
       if (!datos.contratos || !Array.isArray(datos.contratos)) {
         notify('⚠️ Archivo inválido — no se pudo importar'); return;
       }
-      const confirmar = datos.contratos.length > 0
-        ? confirm(`¿Importar ${datos.contratos.length} contrato(s) y ${datos.inspecciones?.length || 0} inspección(es)?\n\nEsto reemplazará los datos actuales.`)
-        : false;
+      const confirmar = confirm(`¿Importar ${datos.contratos.length} contrato(s) y ${datos.inspecciones?.length || 0} inspección(es) a Firestore?\n\nSe agregarán a los datos existentes.`);
       if (!confirmar) { event.target.value = ''; return; }
-      contratos = datos.contratos;
-      inspecciones = datos.inspecciones || [];
-      save(); refresh();
-      notify(`✓ Importados ${contratos.length} contratos y ${inspecciones.length} inspecciones`);
+      for (const c of datos.contratos) {
+        await setDoc(doc(db, 'contratos', c.id), c);
+      }
+      for (const i of (datos.inspecciones || [])) {
+        await setDoc(doc(db, 'inspecciones', i.id), i);
+      }
+      notify(`✓ Importados ${datos.contratos.length} contratos`);
     } catch(err) {
       notify('⚠️ Error al leer el archivo');
     }
@@ -1458,7 +1600,29 @@ function importarDatos(event) {
 }
 
 // ===================== INIT =====================
-refresh();
+mostrarLogin();
+
+// Exponer funciones globales necesarias desde el módulo
+window.openContrato = openContrato;
+window.openInspeccion = openInspeccion;
+window.showView = showView;
+window.openDetailPanel = openDetailPanel;
+window.closeDetailPanel = closeDetailPanel;
+window.closeDetail = closeDetail;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.saveContrato = saveContrato;
+window.editContrato = editContrato;
+window.deleteContrato = deleteContrato;
+window.openRegistrarPago = openRegistrarPago;
+window.confirmarPago = confirmarPago;
+window.saveInspeccion = saveInspeccion;
+window.deleteInspeccion = deleteInspeccion;
+window.exportarDatos = exportarDatos;
+window.importarDatos = importarDatos;
+window.toggleInqJuridico = toggleInqJuridico;
+window.toggleCanonCond = toggleCanonCond;
+
 </script>
 </body>
 </html>
